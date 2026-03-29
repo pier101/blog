@@ -99,7 +99,10 @@ export default async function RootLayout({
       suppressHydrationWarning
       className="h-full antialiased"
     >
-      <body className="min-h-full bg-background text-foreground">
+      <body
+        suppressHydrationWarning
+        className="min-h-full bg-background text-foreground"
+      >
         <Script src="/theme-init.js" strategy="beforeInteractive" nonce={nonce} />
         {gaId ? <GoogleAnalytics gaId={gaId} nonce={nonce} /> : null}
         {websiteJsonLd ? (

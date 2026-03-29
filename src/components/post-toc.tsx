@@ -89,18 +89,28 @@ export function PostToc({ headings }: PostTocProps) {
   }
 
   return (
-    <aside className="pointer-events-none fixed left-[calc(50%+25.75rem)] top-28 z-30 hidden min-[1440px]:block">
+    <aside className="pointer-events-none fixed left-[calc(50%+24.75rem)] top-28 z-30 hidden min-[1180px]:block">
       <div className="pointer-events-auto">
-        <nav aria-label="이 글의 목차" className="inline-block w-fit min-w-[13.5rem] max-w-[19rem]">
-          <p className="pl-4 text-label-xs tracking-label-wide text-quiet-2">Contents</p>
-          <ol className="mt-4 border-l border-border pl-3">
+        <nav aria-label="이 글의 목차" className="w-[10.75rem] xl:w-[11.5rem]">
+          <p className="pl-3 text-label-xs tracking-label-wide text-quiet-2">Contents</p>
+          <ol className="mt-4 border-l border-border pl-1.5">
             {headings.map((heading) => {
               const isActive = activeId === heading.id;
 
               return (
-                <li key={heading.id} className={cn("relative", heading.level === 3 && "ml-4")}>
+                <li key={heading.id} className={cn("group relative min-w-0", heading.level === 3 && "ml-1.5")}>
+                  <span
+                    className={cn(
+                      "absolute left-[-0.42rem] top-1/2 z-10 h-2 w-2 -translate-y-1/2 rounded-full border transition duration-200 motion-reduce:transition-none",
+                      isActive
+                        ? "scale-100 border-background bg-accent"
+                        : "scale-90 border-border bg-surface-muted group-hover:scale-100 group-hover:border-accent-soft group-hover:bg-accent-soft"
+                    )}
+                    aria-hidden="true"
+                  />
                   <a
                     href={`#${heading.id}`}
+                    title={heading.text}
                     aria-current={isActive ? "location" : undefined}
                     onClick={(event) => {
                       event.preventDefault();
@@ -120,20 +130,11 @@ export function PostToc({ headings }: PostTocProps) {
                       window.history.replaceState(null, "", `#${heading.id}`);
                     }}
                     className={cn(
-                      "toc-link group relative block rounded-r-2xl px-4 py-2 text-body-xs leading-5 transition duration-200 motion-reduce:transition-none",
+                      "toc-link relative block w-full min-w-0 overflow-hidden rounded-r-2xl py-1.5 pl-4 pr-2.5 text-[13px] leading-5 transition duration-200 motion-reduce:transition-none",
                       isActive ? "toc-link-active" : "toc-link-inactive"
                     )}
                   >
-                    <span
-                      className={cn(
-                        "absolute left-[-0.48rem] top-1/2 h-2 w-2 -translate-y-1/2 rounded-full border border-background transition duration-200 motion-reduce:transition-none",
-                        isActive
-                          ? "scale-100 bg-accent"
-                          : "scale-75 bg-surface-muted group-hover:scale-100 group-hover:bg-accent-soft"
-                      )}
-                      aria-hidden="true"
-                    />
-                    <span className="block text-pretty">{heading.text}</span>
+                    <span className="block min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{heading.text}</span>
                   </a>
                 </li>
               );
