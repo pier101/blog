@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { PostComments } from "@/components/post-comments";
@@ -100,7 +99,6 @@ export default async function PostDetailPage(props: PageProps<"/posts/[slug]">) 
   }
 
   const { Content, metadata, toc } = post;
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
   const blogPostingJsonLd = getBlogPostingJsonLd(slug, metadata);
 
   return (
@@ -112,7 +110,6 @@ export default async function PostDetailPage(props: PageProps<"/posts/[slug]">) 
         {blogPostingJsonLd ? (
           <script
             type="application/ld+json"
-            nonce={nonce}
             dangerouslySetInnerHTML={{
               __html: serializeJsonLd(blogPostingJsonLd),
             }}

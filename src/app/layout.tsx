@@ -1,6 +1,5 @@
 import { GoogleAnalytics } from "@next/third-parties/google";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import Script from "next/script";
 import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import { GlobalSearch } from "@/components/global-search";
@@ -88,7 +87,6 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const posts = await getAllPosts();
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
   const gaId = process.env.NODE_ENV === "production" ? process.env.NEXT_PUBLIC_GA_ID : undefined;
   const websiteJsonLd = getWebsiteJsonLd();
 
@@ -103,12 +101,11 @@ export default async function RootLayout({
         suppressHydrationWarning
         className="min-h-full bg-background text-foreground"
       >
-        <Script src="/theme-init.js" strategy="beforeInteractive" nonce={nonce} />
-        {gaId ? <GoogleAnalytics gaId={gaId} nonce={nonce} /> : null}
+        <Script src="/theme-init.js" strategy="beforeInteractive" />
+        {gaId ? <GoogleAnalytics gaId={gaId} /> : null}
         {websiteJsonLd ? (
           <script
             type="application/ld+json"
-            nonce={nonce}
             dangerouslySetInnerHTML={{
               __html: serializeJsonLd(websiteJsonLd),
             }}

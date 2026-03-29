@@ -32,6 +32,27 @@ const securityHeaders = [
     key: "Cross-Origin-Opener-Policy",
     value: "same-origin",
   },
+  {
+    key: "Content-Security-Policy",
+    value: [
+      "default-src 'self'",
+      `script-src 'self' 'unsafe-inline' https://giscus.app https://www.googletagmanager.com${
+        process.env.NODE_ENV !== "production" ? " 'unsafe-eval'" : ""
+      }`,
+      "style-src 'self' 'unsafe-inline' https://giscus.app",
+      "img-src 'self' data: blob: https://www.google-analytics.com",
+      "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com",
+      "font-src 'self' data:",
+      "frame-src https://giscus.app",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'self'",
+      "object-src 'none'",
+      ...(process.env.NODE_ENV === "production"
+        ? ["upgrade-insecure-requests"]
+        : []),
+    ].join("; "),
+  },
 ];
 
 const nextConfig: NextConfig = {
