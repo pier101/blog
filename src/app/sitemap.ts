@@ -10,11 +10,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const posts = await getAllPosts();
+  const latestPostDate = posts.reduce<Date | null>((latest, post) => {
+    const publishedAt = new Date(post.date);
+
+    if (Number.isNaN(publishedAt.getTime())) {
+      return latest;
+    }
+
+    if (!latest || publishedAt > latest) {
+      return publishedAt;
+    }
+
+    return latest;
+  }, null);
 
   return [
     {
       url: resolvedSiteUrl.toString(),
-      lastModified: new Date(),
+      lastModified: latestPostDate ?? undefined,
     },
     ...posts.map((post) => ({
       url: new URL(`/posts/${post.slug}`, resolvedSiteUrl).toString(),

@@ -3,6 +3,8 @@ export const siteDescription = "차분한 톤으로 개발 기록을 정리하�
 export const siteLocale = "ko_KR";
 export const siteLanguage = "ko-KR";
 export const siteAuthorName = "pier101";
+export const siteAccentColor = "#3B82F6";
+export const siteAccentSoftColor = "#DBEAFE";
 export const defaultOgImagePath = "/opengraph-image";
 
 function parseSiteUrl(value: string | undefined) {

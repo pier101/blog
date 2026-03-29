@@ -2,7 +2,13 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { ImageResponse } from "next/og";
 import { cache } from "react";
-import { siteDescription, siteName } from "@/lib/site";
+import {
+  siteAccentColor,
+  siteAccentSoftColor,
+  siteAuthorName,
+  siteDescription,
+  siteName,
+} from "@/lib/site";
 
 export const runtime = "nodejs";
 export const size = {
@@ -33,6 +39,8 @@ const loadOgFonts = cache(async () => {
 
 export default async function OpenGraphImage() {
   const { regular, bold } = await loadOgFonts();
+  const accentColor = siteAccentColor;
+  const accentSoft = siteAccentSoftColor;
 
   return new ImageResponse(
     (
@@ -55,7 +63,7 @@ export default async function OpenGraphImage() {
             border: "1px solid rgba(17,17,17,0.06)",
             background: "#ffffff",
             padding: "56px",
-            boxShadow: "0 24px 56px rgba(17,17,17,0.06)",
+            boxShadow: "0 24px 56px rgba(17,17,17,0.05)",
           }}
         >
           <div
@@ -71,14 +79,22 @@ export default async function OpenGraphImage() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "12px",
-                  color: "#3b82f6",
+                  gap: "14px",
                   fontSize: 24,
                   fontWeight: 600,
                 }}
               >
-                <span>@</span>
-                <span>pier101</span>
+                <span
+                  style={{
+                    display: "flex",
+                    height: "18px",
+                    width: "18px",
+                    borderRadius: "999px",
+                    background: accentColor,
+                    boxShadow: "0 0 0 10px rgba(59,130,246,0.12)",
+                  }}
+                />
+                <span style={{ color: accentColor }}>@{siteAuthorName}</span>
               </div>
               <div
                 style={{
@@ -119,8 +135,23 @@ export default async function OpenGraphImage() {
                 color: "#8f8f8f",
               }}
             >
-              <div>Next.js · MDX · Korean Tech Blog</div>
-              <div style={{ color: "#3b82f6", fontWeight: 600 }}>paper trail</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <span
+                  style={{
+                    display: "flex",
+                    borderRadius: "999px",
+                    background: accentSoft,
+                    color: "#2563EB",
+                    padding: "8px 14px",
+                    fontSize: 18,
+                    fontWeight: 600,
+                  }}
+                >
+                  Korean Tech Blog
+                </span>
+                <span>Next.js · MDX</span>
+              </div>
+              <div style={{ color: accentColor, fontWeight: 700 }}>{siteName}</div>
             </div>
           </div>
         </div>
