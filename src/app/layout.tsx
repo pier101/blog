@@ -1,5 +1,6 @@
 import { GoogleAnalytics } from "@next/third-parties/google";
 import type { Metadata } from "next";
+import { JetBrains_Mono } from "next/font/google";
 import Script from "next/script";
 import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import { GlobalSearch } from "@/components/global-search";
@@ -10,6 +11,12 @@ import { defaultOgImagePath, hasConfiguredSiteUrl, siteDescription, siteLocale, 
 import "./globals.css";
 
 const metadataBase = siteUrl ?? new URL("http://localhost:3000");
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-jetbrains-mono",
+  weight: ["400", "500", "600"],
+});
 
 export const metadata: Metadata = {
   metadataBase,
@@ -95,7 +102,7 @@ export default async function RootLayout({
       lang="ko"
       data-scroll-behavior="smooth"
       suppressHydrationWarning
-      className="h-full antialiased"
+      className={`${jetbrainsMono.variable} h-full antialiased`}
     >
       <body
         suppressHydrationWarning

@@ -8,6 +8,7 @@ import {
 import Link from "next/link";
 import type { MDXComponents } from "mdx/types";
 import { Callout } from "@/components/mdx/callout";
+import { MermaidDiagram } from "@/components/mdx/mermaid-diagram";
 import { cn } from "@/lib/cn";
 import { slugifyHeading } from "@/lib/toc";
 
@@ -49,6 +50,17 @@ type CodeProps = ComponentPropsWithoutRef<"code"> & {
   "data-theme"?: string;
 };
 
+type FigureProps = ComponentPropsWithoutRef<"figure"> & {
+  "data-rehype-pretty-code-figure"?: string;
+};
+
+type CodeNodeProps = {
+  children?: ReactNode;
+  className?: string;
+  "data-language"?: string;
+  "data-line"?: string;
+};
+
 function extractTextContent(children: ReactNode): string {
   if (typeof children === "string" || typeof children === "number") {
     return String(children);
@@ -63,6 +75,71 @@ function extractTextContent(children: ReactNode): string {
   }
 
   return "";
+}
+
+function extractCodeBlockText(children: ReactNode): string {
+  if (typeof children === "string" || typeof children === "number") {
+    return String(children);
+  }
+
+  if (Array.isArray(children)) {
+    return children.map(extractCodeBlockText).join("");
+  }
+
+  if (isValidElement<CodeNodeProps>(children)) {
+    const text = extractCodeBlockText(children.props.children);
+
+    return "data-line" in children.props ? `${text}\n` : text;
+  }
+
+  return "";
+}
+
+function getCodeLanguage(
+  props: Partial<CodeProps> | undefined,
+) {
+  if (!props) {
+    return "";
+  }
+
+  if (typeof props["data-language"] === "string") {
+    return props["data-language"];
+  }
+
+  const className = typeof props.className === "string" ? props.className : "";
+  const languageMatch = className.match(/language-([\w-]+)/);
+
+  return languageMatch?.[1] ?? "";
+}
+
+function getMermaidChart(children: ReactNode): string | null {
+  if (!isValidElement<CodeNodeProps>(children)) {
+    return null;
+  }
+
+  const directLanguage = getCodeLanguage(children.props as Partial<CodeProps>);
+
+  if (directLanguage === "mermaid") {
+    const chart = extractCodeBlockText(children.props.children).trim();
+
+    return chart || null;
+  }
+
+  const nestedChildren = children.props.children;
+
+  if (Array.isArray(nestedChildren)) {
+    for (const child of nestedChildren) {
+      const chart = getMermaidChart(child);
+
+      if (chart) {
+        return chart;
+      }
+    }
+  } else if (nestedChildren) {
+    return getMermaidChart(nestedChildren);
+  }
+
+  return null;
 }
 
 export function useMDXComponents(): MDXComponents {
@@ -110,6 +187,19 @@ export function useMDXComponents(): MDXComponents {
       "h3",
       "mdx-heading-3",
     ),
+    figure: ({ className, children, ...props }: FigureProps) => {
+      const mermaidChart = getMermaidChart(children);
+
+      if (mermaidChart) {
+        return <MermaidDiagram chart={mermaidChart} className={className} />;
+      }
+
+      return (
+        <figure {...props} className={className}>
+          {children}
+        </figure>
+      );
+    },
     p: ({ className, ...props }) => (
       <p
         {...props}
@@ -154,12 +244,22 @@ export function useMDXComponents(): MDXComponents {
         />
       );
     },
-    pre: ({ className, ...props }) => (
-      <pre
-        {...props}
-        className={cn("mdx-pre", className)}
-      />
-    ),
+    pre: ({ className, children, ...props }) => {
+      const mermaidChart = getMermaidChart(children);
+
+      if (mermaidChart) {
+        return <MermaidDiagram chart={mermaidChart} className={className} />;
+      }
+
+      return (
+        <pre
+          {...props}
+          className={cn("mdx-pre", className)}
+        >
+          {children}
+        </pre>
+      );
+    },
     strong: ({ className, ...props }) => (
       <strong
         {...props}

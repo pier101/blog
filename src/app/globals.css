@@ -3,8 +3,8 @@
 :root {
   --font-body: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo",
     "Malgun Gothic", "Segoe UI", sans-serif;
-  --font-mono-stack: "SFMono-Regular", "SF Mono", "ui-monospace", Menlo,
-    Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-mono-stack: var(--font-jetbrains-mono), "ui-monospace", Consolas,
+    "Liberation Mono", "Courier New", monospace;
   --background: #f8f8f8;
   --foreground: #1e1e1e;
   --foreground-strong: #111111;
@@ -484,6 +484,62 @@ html[data-theme="dark"] .post-body :where(.mdx-pre) {
   font-size: 14px;
   line-height: 24px;
   color: rgba(226, 232, 240, 0.72);
+}
+
+.post-body :where(.mdx-mermaid-figure) {
+  display: block;
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+}
+
+.post-body :where(.mdx-mermaid-panel) {
+  width: 100%;
+}
+
+.post-body :where(.mdx-mermaid-canvas) {
+  display: grid;
+  justify-items: center;
+  overflow-x: auto;
+}
+
+.post-body :where(.mdx-mermaid-canvas > svg) {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+}
+
+.post-body :where(.mdx-mermaid-placeholder) {
+  display: flex;
+  min-height: 220px;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 24px;
+  color: var(--muted-foreground);
+}
+
+.post-body :where(.mdx-mermaid-fallback) {
+  margin-top: 0.75rem;
+}
+
+.post-body :where(.mdx-mermaid-error) {
+  font-size: 14px;
+  line-height: 24px;
+  color: color-mix(in srgb, var(--foreground-strong) 70%, #d14343 30%);
+}
+
+.post-body :where(.mdx-mermaid-source) {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--surface-soft);
+  margin-top: 0.75rem;
+  padding: 0.9rem 1rem;
+  font-size: 13px;
+  line-height: 22px;
+  color: var(--foreground);
 }
 
 .post-body :where(.mdx-strong) {
