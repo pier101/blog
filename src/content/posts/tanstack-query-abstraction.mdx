@@ -122,7 +122,7 @@ function useOrder(orderId: number, options?: Partial<UseQueryOptions>) {
 
 ```tsx
 const { data } = useOrder(1, { throwOnError: true });
-//     ^-- data: unknown 🚨
+//     ^-- data: unknown
 ```
 
 `data`의 타입이 `Order`가 아닌 `unknown`이 됩는데 이유가 뭘까요?
