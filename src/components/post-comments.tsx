@@ -70,7 +70,7 @@ function createGiscusScript(theme: string) {
 export function PostComments() {
   const pathname = usePathname();
   const commentsRef = useRef<HTMLDivElement>(null);
-  const [shouldLoad, setShouldLoad] = useState(false);
+  const [loadedPathname, setLoadedPathname] = useState("");
   const theme = useSyncExternalStore(
     subscribeAppearance,
     resolveTheme,
@@ -95,76 +95,19 @@ export function PostComments() {
       return;
     }
 
-    if (shouldLoad) {
-      return;
-    }
-
-    if (!("IntersectionObserver" in window)) {
-      const timeoutId = globalThis.setTimeout(() => {
-        setShouldLoad(true);
-      }, 0);
-
-      return () => {
-        globalThis.clearTimeout(timeoutId);
-      };
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) {
-          return;
-        }
-
-        setShouldLoad(true);
-        observer.disconnect();
-      },
-      {
-        rootMargin: "560px 0px",
-      }
-    );
-
-    observer.observe(container);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [isConfigured, shouldLoad, pathname]);
+    container.replaceChildren();
+    container.appendChild(createGiscusScript(getGiscusTheme(resolveTheme())));
+  }, [isConfigured, pathname]);
 
   useEffect(() => {
     const container = commentsRef.current;
 
-    if (!container || !isConfigured || !shouldLoad) {
-      return;
-    }
-
-    if (container.querySelector("iframe.giscus-frame")) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      const target = commentsRef.current;
-
-      if (!target) {
-        return;
-      }
-
-      target.replaceChildren();
-      target.appendChild(createGiscusScript(giscusTheme));
-    }, 80);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [giscusTheme, isConfigured, pathname, shouldLoad]);
-
-  useEffect(() => {
-    const container = commentsRef.current;
-
-    if (!container || !isConfigured || !shouldLoad) {
+    if (!container || !isConfigured) {
       return;
     }
 
     const syncTheme = () => {
+      setLoadedPathname(pathname);
       sendThemeMessage(giscusTheme);
     };
 
@@ -188,7 +131,7 @@ export function PostComments() {
     return () => {
       observer.disconnect();
     };
-  }, [giscusTheme, isConfigured, pathname, shouldLoad]);
+  }, [giscusTheme, isConfigured, pathname]);
 
   if (!isConfigured) {
     if (process.env.NODE_ENV === "production") {
@@ -221,9 +164,10 @@ export function PostComments() {
         radius="panel"
         className="mt-6 px-3 py-3 sm:px-4 sm:py-4"
       >
-        <div ref={commentsRef} className="giscus min-h-[220px]">
-          {!shouldLoad ? (
-            <div className="flex min-h-[220px] items-center justify-center text-body-xs text-muted-foreground">
+        <div className="relative min-h-[220px]">
+          <div ref={commentsRef} className="giscus min-h-[220px]" />
+          {loadedPathname !== pathname ? (
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-body-xs text-muted-foreground">
               댓글 영역을 준비하고 있습니다.
             </div>
           ) : null}
