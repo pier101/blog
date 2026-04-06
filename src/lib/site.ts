@@ -1,5 +1,5 @@
 export const siteName = "pier101";
-export const siteDescription = "차분한 톤으로 개발 기록을 정리하는 심플한 한국어 기술 블로그";
+export const siteDescription = "차곡차곡 쌓아두는 기술 기록과 설계 메모 (프론트엔드 기술 블로그)";
 export const siteLocale = "ko_KR";
 export const siteLanguage = "ko-KR";
 export const siteAuthorName = "pier101";

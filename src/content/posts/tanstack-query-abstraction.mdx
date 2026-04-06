@@ -1,0 +1,409 @@
+export const metadata = {
+  title: "우리가 TanStack Query를 잘못 추상화해온 방법",
+  excerpt: "TanStack Query에서 추상화를 잘못 시작하면 왜 점점 복잡해지는가",
+  category: "Skill",
+  date: "2026-04-06",
+  tags: ["queryOptions", "tanstack", "query"],
+  readingTime: "12 min read",
+  thumbnail: "/posts/02-tanstack-query-abstraction.webp",
+};
+
+# 우리가 TanStack Query를 잘못 추상화해온 방법
+
+> **TkDodo의 "Creating Query Abstractions"를 읽고 정리한 글입니다.**  
+> 원문: https://tkdodo.eu/blog/creating-query-abstractions
+
+---
+
+## 들어가며
+
+개발자로서 작업을 할 때 조금이라도 공통성이 보이면 간결하게 리팩토링 하는 것에 대한 강박이 조금씩 들곤 하는데요.
+
+TanStack Query를 사용하다 보면 여러 컴포넌트에서 같은 `queryKey`와 `queryFn`을 반복해서 쓰게 되고, 이 중복을 줄이기 위해 **커스텀 훅**을 써보자! 라고 생각이 듭니다.
+
+이 글에서는 그 커스텀 훅 방식이 어떤 함정을 품고 있는지, 그리고 TanStack Query v5가 제시하는 더 나은 추상화 방법인 `queryOptions`가 왜 올바른 선택인지를 단계적으로 살펴보아요.
+
+---
+
+## 1. 우리가 익숙하게 써온 방식: 커스텀 훅
+
+이커머스 서비스를 개발한다고 가정해 봅시다. 주문 상세 정보를 서버에서 가져와야 하는 상황입니다. 처음엔 이렇게 시작합니다.
+
+```tsx
+// OrderDetailPage.tsx
+function OrderDetailPage({ orderId }: { orderId: number }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["order", orderId],
+    queryFn: () => fetchOrder(orderId),
+  });
+
+  // ...
+}
+```
+
+문제없어 보입니다. 그런데 곧 다른 페이지에서도 주문 데이터가 필요해질 때면 추상화하고 싶어지는데요.
+
+이 문제를 해결하기 위한 자연스러운 선택이 바로 **커스텀 훅**입니다.
+
+```tsx
+// hooks/useOrder.ts
+function useOrder(orderId: number) {
+  return useQuery({
+    queryKey: ["order", orderId],
+    queryFn: () => fetchOrder(orderId),
+  });
+}
+```
+
+이제 어디서든 `useOrder(1)`만 호출하면 됩니다. `queryKey`는 한 곳에서만 관리되고, 반환 타입은 `UseQueryResult<Order, Error>`로 자동 추론됩니다. 타입 어노테이션 없이도 TypeScript가 알아서 다 맞춰줍니다.
+
+겉으로 보기엔 괜찮은 추상화로 보입니다. 아직까지는요...
+
+---
+
+## 2. 첫 번째 균열: 옵션을 추가해야 할 때
+
+주문 상세 페이지는 실시간성이 중요하지 않으니 `staleTime`을 길게 설정하고 싶다는 요구가 들어온 경우를 가정해볼게요.
+
+쉽게 접근해보면 `useOrder`의 매개변수에 `staleTime`을 추가해볼 수 있습니다. 아래처럼요
+
+```tsx
+function useOrder(orderId: number, staleTime: number) {
+  return useQuery({
+    queryKey: ["order", orderId],
+    queryFn: () => fetchOrder(orderId),
+    staleTime,
+  });
+}
+```
+
+추가로 이번엔 에러 바운더리와 연동하기 위해 `throwOnError`도 필요하다고 합니다.
+
+```tsx
+function useOrder(orderId: number, staleTime: number, throwOnError: boolean) {
+  // ...
+}
+```
+
+매개변수가 많아지고 있어 객체로 묶어야겠다는 생각이 듭니다.
+
+```tsx
+function useOrder(orderId: number, options?: { staleTime?: number; throwOnError?: boolean }) {
+  return useQuery({
+    queryKey: ["order", orderId],
+    queryFn: () => fetchOrder(orderId),
+    ...options,
+  });
+}
+```
+
+이쯤 되면 뭔가 이상하다는 느낌이 옵니다.
+
+우리는 분명 “작은 공통 코드”를 감쌌는데,
+새 요구사항이 생길 때마다 그 추상화를 계속 뜯어고치고 있습니다.
+
+즉, 이 추상화는 우리 도메인을 표현하는 것이 아니라,
+TanStack Query의 옵션 목록을 뒤늦게 따라가는 얇은 래퍼가 되어가고 있습니다.
+
+이 문제를 어떻게 해결해야 할까요?
+
+---
+
+## 3. TypeScript의 함정
+
+떠오르는 해결책으로 TanStack Query가 노출하는 `UseQueryOptions` 타입을 그대로 전달해보겠습니다.
+
+```tsx
+import type { UseQueryOptions } from "@tanstack/react-query";
+
+function useOrder(orderId: number, options?: Partial<UseQueryOptions>) {
+  return useQuery({
+    queryKey: ["order", orderId],
+    queryFn: () => fetchOrder(orderId),
+    ...options,
+  });
+}
+```
+
+타입 에러도 없고, 모든 옵션을 받을 수 있을 것 같지만 실제로 사용해보면 이런 결과가 나옵니다.
+
+```tsx
+const { data } = useOrder(1, { throwOnError: true });
+//     ^-- data: unknown 🚨
+```
+
+`data`의 타입이 `Order`가 아닌 `unknown`이 됩는데 이유가 뭘까요?
+
+TanStack Query는 타입 추론을 위해 **제네릭(Generics)** 을 사용합니다. `UseQueryOptions`는 다음처럼 정의되어 있습니다.
+
+```ts
+interface UseQueryOptions<
+  TQueryFnData = unknown,  // queryFn이 반환하는 타입
+  TError = Error,
+  TData = TQueryFnData,    // select 이후 최종 데이터 타입
+  TQueryKey extends QueryKey = readonly unknown[]
+>
+```
+
+제네릭을 명시하지 않으면 기본값이 적용되는데, `TQueryFnData`의 기본값이 `unknown`입니다. 우리가 `Partial<UseQueryOptions>`처럼 제네릭 없이 사용하면, 타입스크립트는 이 `unknown`을 그대로 들고 옵니다.
+
+### "그냥 첫 번째 제네릭만 넘기면 되지 않나요?"
+
+이번엔 이렇게 시도해 보겠습니다.
+
+```tsx
+function useOrder(orderId: number, options?: Partial<UseQueryOptions<Order>>) {
+  return useQuery({
+    queryKey: ["order", orderId],
+    queryFn: () => fetchOrder(orderId),
+    ...options,
+  });
+}
+```
+
+이제 `data`는 `Order | undefined`로 잘 추론됩니다. 해결된 것 같습니다.
+
+그런데 `select`를 써보면?
+
+```tsx
+const { data } = useOrder(1, {
+  select: (order) => order.createdAt,
+  // TS Error: Type '(order: Order) => string' is not assignable
+  //           to type '(data: Order) => Order'.
+});
+```
+
+타입 에러가 발생합니다. `select`가 `Order`를 반환해야 한다고 강제되기 때문입니다. 세 번째, 네 번째 제네릭을 함께 맞춰야 `select`가 올바르게 작동합니다. 결국 이 방식을 제대로 구현하려면 네 개의 제네릭을 모두 조율해야 합니다.
+
+이 시점에서 우리는 라이브러리가 "알아서 해주기로 약속했던 것"을 직접 하고 있습니다.
+
+---
+
+## 4. 커스텀 훅이 잘못된 추상화인 이유
+
+이 과정을 토대로 보았을 때 **커스텀 훅은 Query 설정을 공유하기 위한 올바른 추상화가 아니라 판단됩니다.**
+
+그 이유는 세 가지입니다.
+
+### ① 훅은 컴포넌트 안에서만 사용됩니다.
+
+React의 훅 규칙상, 커스텀 훅은 컴포넌트 또는 다른 훅 안에서만 호출할 수 있습니다. 하지만 TanStack Query를 현대적으로 사용하면, 훅 바깥에서도 쿼리 설정이 필요한 상황이 자주 생깁니다.
+
+- **라우터 로더(Route Loader)**: React Router나 TanStack Router에서 페이지 진입 전에 데이터를 미리 가져올 때
+- **서버 사이드 렌더링(SSR)**: Next.js나 Remix에서 서버에서 데이터를 프리패칭할 때
+- **이벤트 핸들러**: 버튼 클릭 시 prefetch를 트리거할 때
+
+```tsx
+// React Router loader - 훅을 쓸 수 없는 환경
+export async function loader({ params }) {
+  // useOrder(params.id) ← 이건 불가능
+  await queryClient.prefetchQuery(/* 여기서 어떻게 queryKey와 queryFn을 가져오죠? */);
+}
+```
+
+`useOrder`를 만들었는데 막상 가장 필요한 곳에서 쓰지 못하는 상황이 생깁니다.
+
+### ② 훅은 설정이 아니라 로직을 공유하기 위한 것입니다
+
+`useOrder`는 사실 공유되는 "로직"이 없습니다. 그저 `queryKey`와 `queryFn`이라는 **설정값**을 한 곳에 모아두고 싶은 것입니다. 커스텀 훅은 복잡한 사이드 이펙트나 상태 로직을 재사용할 때 빛나는 패턴입니다. 단순히 설정을 공유하는 용도로는 과한 도구입니다.
+
+### ③ 훅은 특정 구현체에 묶이게 됩니다.
+
+`useOrder`는 내부적으로 `useQuery`를 씁니다. 그런데 Suspense 방식으로 바꾸고 싶다면? `useSuspenseQuery`를 써야 합니다. 여러 주문을 병렬로 가져오고 싶다면? `useQueries`를 써야 합니다.
+
+```tsx
+// Suspense 방식으로 바꾸고 싶은데...
+const { data } = useSuspenseOrder(orderId) // ← 이걸 또 만들어야 하나?
+
+// 병렬 요청은?
+const results = useQueries({
+  queries: orderIds.map(id => /* 여기서 useOrder의 설정을 어떻게 가져오죠? */)
+})
+```
+
+커스텀 훅 하나로는 이 모든 케이스를 커버하기 어렵습니다. 각 상황마다 별도의 훅을 만들거나, 내부에서 분기 처리를 해야 합니다.
+
+---
+
+## 5. 궁극적인 해결 방안: `queryOptions`
+
+TanStack Query v5부터는 `queryOptions`라는 함수가 공식 지원됩니다. 이것이 바로 Query 설정을 공유하기 위한 올바른 추상화입니다.
+
+```tsx
+import { queryOptions } from "@tanstack/react-query";
+
+function orderOptions(orderId: number) {
+  return queryOptions({
+    queryKey: ["order", orderId],
+    queryFn: () => fetchOrder(orderId),
+  });
+}
+```
+
+코드가 커스텀 훅 버전과 거의 똑같아 보입니다. 그런데 이게 왜 더 나을까요?
+
+### 런타임에서의 정체
+
+`queryOptions`는 런타임에서 아무것도 하지 않습니다. 트랜스파일된 JavaScript 코드를 보면 이렇습니다.
+
+```js
+function queryOptions(options) {
+  return options;
+}
+```
+
+그냥 받은 걸 그대로 돌려줍니다. 즉, `queryOptions`는 순수한 객체 팩토리 함수입니다. **훅이 아닙니다.** 어디서든 호출할 수 있습니다.
+
+### 타입 레벨에서의 마법
+
+반면 타입 레벨에서는 강력한 일이 일어납니다. `queryOptions`는 내부적으로 `queryKey`에 타입 정보를 태깅합니다. 덕분에 별도의 제네릭 지정 없이도 완벽한 타입 추론이 유지됩니다.
+
+```tsx
+// 어디서든 쓸 수 있습니다 ✅
+const { data: order } = useQuery(orderOptions(1));
+//     ^-- data: Order | undefined
+
+const { data: orderWithSuspense } = useSuspenseQuery(orderOptions(2));
+//     ^-- data: Order (Suspense는 undefined가 없음)
+
+const results = useQueries({
+  queries: [1, 2, 3].map((id) => orderOptions(id)),
+  //          ^-- 각각 Order 타입으로 정확히 추론됨
+});
+```
+
+`useQuery`, `useSuspenseQuery`, `useQueries` 모두에서 같은 설정을 재사용할 수 있습니다. 타입도 완벽하게 추론됩니다.
+
+### 훅 바깥에서도 쓸 수 있습니다
+
+라우터 로더나 프리패칭 코드에서도 이제 자연스럽게 사용할 수 있습니다.
+
+```tsx
+// React Router loader
+export async function loader({ params }) {
+  const orderId = Number(params.orderId);
+
+  // 훅이 아니므로 어디서든 호출 가능 ✅
+  await queryClient.prefetchQuery(orderOptions(orderId));
+
+  return null;
+}
+```
+
+이제 라우터 레벨에서 데이터를 미리 가져오는 코드와 컴포넌트에서 데이터를 읽는 코드가 동일한 설정을 공유합니다. `queryKey`가 절대로 어긋날 수 없습니다.
+
+---
+
+## 6. 그럼 옵션은 어떻게 추가하나요?
+
+이쯤에서 이런 의문이 생길 수 있습니다.
+
+_"옵션을 유연하게 받아야 할 때는요? `staleTime`이나 `throwOnError`를 상황에 따라 다르게 주고 싶을 때는 어떻게 하죠?"_
+
+정답은 생각보다 단순합니다. **`orderOptions`에 옵션을 추가하지 않습니다.** 대신 호출 지점에서 직접 조합합니다.
+
+```tsx
+const { data } = useQuery({
+  ...orderOptions(1), // 공통 설정 펼치기
+  staleTime: 5 * 60 * 1000, // 이 페이지에서만 필요한 옵션
+  throwOnError: true, // 이 컴포넌트에서만 필요한 옵션
+  select: (order) => order.createdAt, // 이 컴포넌트에서만 필요한 변환
+});
+//  ^-- data: string | undefined (select 타입도 완벽하게 추론됨!) ✅
+```
+
+이 접근 방식에는 여러 장점이 있습니다.
+
+**`select`도 완벽하게 작동합니다.** 커스텀 훅에서 발생했던 제네릭 꼬임 문제가 사라지고, `queryOptions`가 내부적으로 `queryKey`에 타입을 태깅해두었기 때문에, 스프레드 이후에도 TypeScript가 정확한 타입을 추적합니다.
+
+**공통 설정은 보호됩니다.** `orderOptions`를 그대로 두고 필요한 것만 위에 덮어씁니다. 나중에 누군가 `queryKey`를 바꾸고 싶으면 `orderOptions` 하나만 수정하면 됩니다.
+
+**커스텀 훅이 필요하면 그 위에 쌓으면 됩니다.** `queryOptions`가 기반이 되고, 커스텀 훅은 선택 사항이 됩니다.
+
+```tsx
+// 더 복잡한 조합도 가능
+function useOrderWithSuspense(orderId: number) {
+  return useSuspenseQuery(orderOptions(orderId));
+}
+```
+
+---
+
+## 7. 실제 코드로 비교해보기
+
+지금까지 이야기한 내용을 한 눈에 비교해보겠습니다.
+
+### Before: 커스텀 훅 방식
+
+```tsx
+// ❌ 훅 안에서만 쓸 수 있음
+// ❌ select 타입 추론 깨짐
+// ❌ useQueries, useSuspenseQuery와 공유 불가
+// ❌ 라우터 로더에서 사용 불가
+
+function useOrder(orderId: number, options?: Partial<UseQueryOptions<Order>>) {
+  return useQuery({
+    queryKey: ["order", orderId],
+    queryFn: () => fetchOrder(orderId),
+    ...options,
+  });
+}
+
+// 사용 시
+const { data } = useOrder(1, { staleTime: 60000 });
+// select를 쓰면 타입 에러 발생
+```
+
+### After: queryOptions 방식
+
+```tsx
+// ✅ 어디서든 쓸 수 있음 (훅, 로더, 이벤트 핸들러, 서버)
+// ✅ 모든 옵션 타입 추론 완벽
+// ✅ useQuery, useSuspenseQuery, useQueries 모두와 공유
+// ✅ queryClient.prefetchQuery 등 명령형 API와도 공유
+
+function orderOptions(orderId: number) {
+  return queryOptions({
+    queryKey: ["order", orderId],
+    queryFn: () => fetchOrder(orderId),
+  });
+}
+
+// 사용 시 - 조합(Composition)으로 확장
+const { data } = useQuery({
+  ...orderOptions(1),
+  staleTime: 60000,
+  select: (order) => order.createdAt, // 타입도 string으로 정확히 추론
+});
+
+// 라우터 로더에서
+await queryClient.prefetchQuery(orderOptions(1));
+
+// Suspense와 함께
+const { data } = useSuspenseQuery(orderOptions(1));
+
+// 병렬 요청
+const results = useQueries({
+  queries: [1, 2, 3].map((id) => orderOptions(id)),
+});
+```
+
+---
+
+## 마치며
+
+추상화는 강력한 도구이지만, 잘못된 레이어에 잘못된 도구를 쓰면 오히려 코드를 복잡하게 만듭니다.
+
+커스텀 훅은 컴포넌트 간 **화면 로직**을 공유할 때 유용하다고 생각됩니다. 하지만 `queryKey`와 `queryFn`은 화면 로직이 아니라 **설정**이기 때문에 이를 공유하는 상황에서는 `queryOptions`가 훨씬 더 적합한 도구라 생각됩니다.
+
+앞으로는 추상화 작업의 출발점으로 `queryOptions`로 쿼리 정의 함수를 만드는 것부터 시작해보려고 합니다.
+
+---
+
+**참고 자료**
+
+- [TkDodo - Creating Query Abstractions](https://tkdodo.eu/blog/creating-query-abstractions)
+- [TkDodo - The Query Options API](https://tkdodo.eu/blog/the-query-options-api)
+- [TkDodo - React Query and TypeScript](https://tkdodo.eu/blog/react-query-and-type-script)
+- [TanStack Query React Guide - Query Options](https://tanstack.com/query/v5/docs/framework/react/guides/query-options)
+- [TanStack Query React API Reference - queryOptions](https://tanstack.com/query/v5/docs/framework/react/reference/queryOptions)
