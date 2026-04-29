@@ -1,10 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --font-body: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo",
-    "Malgun Gothic", "Segoe UI", sans-serif;
-  --font-mono-stack: var(--font-jetbrains-mono), "ui-monospace", Consolas,
-    "Liberation Mono", "Courier New", monospace;
+  --font-body: "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Segoe UI", sans-serif;
+  --font-mono-stack: var(--font-jetbrains-mono), "ui-monospace", Consolas, "Liberation Mono", "Courier New", monospace;
   --background: #f8f8f8;
   --foreground: #1e1e1e;
   --foreground-strong: #111111;
@@ -42,7 +40,7 @@
 }
 
 html[data-theme="dark"] {
-  --background: #121417;
+  --background: #15171b;
   --foreground: #ddd9d1;
   --foreground-strong: #f7f3ea;
   --muted-foreground: #ada79d;
@@ -259,13 +257,7 @@ a {
   max-width: none;
 }
 
-.post-body :where(
-  .mdx-paragraph,
-  .mdx-list,
-  .mdx-list-item,
-  .mdx-blockquote,
-  .mdx-callout-body
-) {
+.post-body :where(.mdx-paragraph, .mdx-list, .mdx-list-item, .mdx-blockquote, .mdx-callout-body) {
   word-break: keep-all;
   overflow-wrap: break-word;
 }
@@ -389,9 +381,11 @@ a {
   border-radius: 0;
   background:
     linear-gradient(to right, var(--code-block-grid) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--code-block-grid) 1px, transparent 1px),
-    var(--code-block-surface);
-  background-size: 1.1rem 1.1rem, 1.1rem 1.1rem, auto;
+    linear-gradient(to bottom, var(--code-block-grid) 1px, transparent 1px), var(--code-block-surface);
+  background-size:
+    1.1rem 1.1rem,
+    1.1rem 1.1rem,
+    auto;
   padding: 1.3rem 1.4rem;
   box-shadow: none;
 }
@@ -399,9 +393,11 @@ a {
 html[data-theme="dark"] .post-body :where(.mdx-pre) {
   background:
     linear-gradient(to right, var(--code-block-grid) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--code-block-grid) 1px, transparent 1px),
-    var(--code-block-surface);
-  background-size: 1.1rem 1.1rem, 1.1rem 1.1rem, auto;
+    linear-gradient(to bottom, var(--code-block-grid) 1px, transparent 1px), var(--code-block-surface);
+  background-size:
+    1.1rem 1.1rem,
+    1.1rem 1.1rem,
+    auto;
 }
 
 .post-body .mdx-pre::-webkit-scrollbar {
@@ -453,9 +449,7 @@ html[data-theme="dark"] .post-body :where(.mdx-pre) {
 
 .post-body :where(.mdx-code-block > [data-highlighted-line]) {
   margin-inline: -1.4rem;
-  padding-inline:
-    calc(1.4rem - 2px)
-    1.4rem;
+  padding-inline: calc(1.4rem - 2px) 1.4rem;
   border-left: 2px solid color-mix(in srgb, var(--accent) 70%, white 30%);
   background-color: var(--code-block-highlight);
 }
@@ -686,7 +680,11 @@ html[data-theme="dark"] .toc-link-inactive:hover {
   .post-body :where(.mdx-pre) {
     border-radius: 1rem;
     padding: 1rem 1rem 1rem 0.95rem;
-    background-size: auto, 0.95rem 0.95rem, 0.95rem 0.95rem, auto;
+    background-size:
+      auto,
+      0.95rem 0.95rem,
+      0.95rem 0.95rem,
+      auto;
   }
 
   .post-body :where(.mdx-code-block > [data-line]::before) {
@@ -696,8 +694,6 @@ html[data-theme="dark"] .toc-link-inactive:hover {
 
   .post-body :where(.mdx-code-block > [data-highlighted-line]) {
     margin-inline: -1rem;
-    padding-inline:
-      calc(1rem - 2px)
-      1rem;
+    padding-inline: calc(1rem - 2px) 1rem;
   }
 }
