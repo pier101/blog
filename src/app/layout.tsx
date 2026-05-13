@@ -11,6 +11,7 @@ import { defaultOgImagePath, hasConfiguredSiteUrl, siteDescription, siteLocale, 
 import "./globals.css";
 
 const metadataBase = siteUrl ?? new URL("http://localhost:3000");
+const googleSiteVerificationToken = "Wk00Z6wPn7SrB3xXqhPhX2J5MuK5m7xZxEz1fRLwx2g";
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   display: "swap",
@@ -26,6 +27,9 @@ export const metadata: Metadata = {
     template: `%s | ${siteName}`,
   },
   description: siteDescription,
+  verification: {
+    google: googleSiteVerificationToken,
+  },
   alternates: siteUrl
     ? {
         canonical: "/",
