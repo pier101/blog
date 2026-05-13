@@ -11,7 +11,7 @@ import { defaultOgImagePath, hasConfiguredSiteUrl, siteDescription, siteLocale, 
 import "./globals.css";
 
 const metadataBase = siteUrl ?? new URL("http://localhost:3000");
-const googleSiteVerificationToken = "Wk00Z6wPn7SrB3xXqhPhX2J5MuK5m7xZxEz1fRLwx2g";
+const googleSiteVerificationToken = "RB1SiAfAWUwv7p44XktmCFTOoBeriNWz0h9xjvIyz0g";
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   display: "swap",
