@@ -9,9 +9,18 @@ type HomeFeedProps = {
   posts: PostSummary[];
 };
 
+function formatArchiveDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}. ${month}. ${day}`;
+}
+
 export function HomeFeed({ posts }: HomeFeedProps) {
   const [activeCategory, setActiveCategory] = useState("All");
   const [mobileCategoriesExpanded, setMobileCategoriesExpanded] = useState(false);
+  const archiveDate = formatArchiveDate(new Date());
   const mobileCategoriesPanelId = "mobile-categories-panel";
   const categories = ["All", ...new Set(posts.map((post) => post.category))];
   const currentYear = new Date().getFullYear();
@@ -31,7 +40,9 @@ export function HomeFeed({ posts }: HomeFeedProps) {
         <Panel border="panel" className="px-6 py-6 sm:px-6 sm:py-6" radius="panel" shadow="panel">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <Eyebrow className="tracking-label-wide">Archive {currentYear}</Eyebrow>
+              <Eyebrow className="tracking-label-wide" suppressHydrationWarning>
+                {archiveDate}
+              </Eyebrow>
               <h1 className="mt-2 text-display-md font-semibold tracking-display text-foreground-strong ">
                 pier101
                 <span className="mr-1 text-accent">.</span>
@@ -74,7 +85,9 @@ export function HomeFeed({ posts }: HomeFeedProps) {
 
       <section className="min-w-0 pb-28 lg:pb-0">
         <div className="pb-5 lg:hidden">
-          <Eyebrow className="tracking-label-wide">Archive {currentYear}</Eyebrow>
+          <Eyebrow className="tracking-label-wide" suppressHydrationWarning>
+            {archiveDate}
+          </Eyebrow>
           <h1 className="mt-2 text-display-md font-semibold tracking-display text-foreground-strong sm:text-display-md">
             pier101
             <span className="ml-1 text-accent">.</span>
